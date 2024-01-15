@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView ,Button} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Animated ,Button} from 'react-native';
 import { Audio } from 'expo-av';
 import { MaterialIcons } from '@expo/vector-icons'; // Ensure you have expo/vector-icons installed
+import AnimatedSoundBars from '../components/AnimatedSoundBars';
 
+const dotAnimations = Array.from({ length: 10 }).map(
+  () => new Animated.Value(1)
+);
 
 const RecordPage = ({ navigation, route }) => {
   // Extract patient name from route params if passed
@@ -13,6 +17,8 @@ const RecordPage = ({ navigation, route }) => {
   const [timer, setTimer] = useState(0);
   
   async function startRecording() {
+    setIsRecording((prev) => !prev);
+
     try {
       const perm = await Audio.requestPermissionsAsync();
       if (perm.status === "granted") {
@@ -27,8 +33,10 @@ const RecordPage = ({ navigation, route }) => {
   }
 
   async function stopRecording() {
-    setRecording(undefined);
+    setIsRecording((prev) => !prev);
+    setTimer(0); // Reset the timer to zero
 
+    setRecording(undefined);
     await recording.stopAndUnloadAsync();
     let allRecordings = [...recordings];
     const { sound, status } = await recording.createNewLoadedSoundAsync();
@@ -41,11 +49,11 @@ const RecordPage = ({ navigation, route }) => {
     setRecordings(allRecordings);
   }
 
-  function getDurationFormatted(milliseconds) {
-    const minutes = milliseconds / 1000 / 60;
-    const seconds = Math.round((minutes - Math.floor(minutes)) * 60);
-    return seconds < 10 ? `${Math.floor(minutes)}:0${seconds}` : `${Math.floor(minutes)}:${seconds}`
-  }
+  const formatTime = () => {
+    const minutes = Math.floor(timer / 60);
+    const seconds = timer % 60;
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
 
   function getRecordingLines() {
     return recordings.map((recordingLine, index) => {
@@ -60,13 +68,14 @@ const RecordPage = ({ navigation, route }) => {
     });
   }
   
-    function clearRecordings() {
+  function clearRecordings() {
       setRecordings([])
-    }
+  }
 
   const handleClose = () => {
     navigation.goBack();
   };
+  
 
   useEffect(() => {
     let interval;
@@ -81,36 +90,36 @@ const RecordPage = ({ navigation, route }) => {
   }, [isRecording]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+
       <View style={styles.container}>
         <Text style={styles.patientName}>{patientName}</Text>
 
         <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
-        <MaterialIcons name="close" size={24} color="#fff" />
+          <MaterialIcons name="close" size={32} color="#fff" />
         </TouchableOpacity>
 
-        <Text style={styles.timerText}>{getDurationFormatted(timer)}</Text>
+        <Text style={styles.timerText}>{formatTime()}</Text>
 
         {/* Waveform placeholder */}
         <View style={styles.waveformPlaceholder}>
           {/* Placeholder for waveform. You can implement or integrate an actual waveform representation */}
-          <Text style={styles.waveformText}>Waveform goes here</Text>
+          <AnimatedSoundBars isAnimating={isRecording} barColor="#FFF" />
+          {/* <Text style={styles.waveformText}>Waveform goes here</Text> */}
         </View>
 
         {/* Recording controls */}
         <View style={styles.controls}>
           <TouchableOpacity onPress={isRecording ? stopRecording : startRecording} style={styles.recordButton}>
-            <MaterialIcons name={isRecording ? "stop" : "mic"} size={30} color="#fff" />
+            <MaterialIcons name={isRecording ? "stop" : "mic"} size={30} />
           </TouchableOpacity>
-          <Text style={styles.recordingText}>{isRecording ? 'Recording...' : 'Tap to Start'}</Text>
+          <Text style={styles.recordButtonText}>{isRecording ? 'Recording...' : 'Tap to Start'}</Text>
         </View>
 
-        <View style={styles.recordingsList}>
+        {/* <View style={styles.recordingsList}>
           {getRecordingLines()}
-        </View>
+        </View> */}
 
-        <TouchableOpacity
-          style={styles.sendButton}
+        <TouchableOpacity style={styles.sendButton}
           onPress={() => {
             // Placeholder for sending the file to the server
             console.log('Send button pressed. Implement sending the audio file.');
@@ -120,116 +129,101 @@ const RecordPage = ({ navigation, route }) => {
         </TouchableOpacity>
     
       </View>
-    </SafeAreaView>
   );
 };
 
-
-// const styles = StyleSheet.create({
-//   safeArea: {
-//     flex: 1,
-//     backgroundColor: '#4CAF50', // Primary color
-//   },
-//   container: {
-//     flex: 1,
-//     alignItems: 'center',
-//     justifyContent: 'space-between',
-//   },
-//   closeButton: {
-//     alignSelf: 'flex-end',
-//     padding: 16,
-//   },
-//   timerText: {
-//     color: '#fff',
-//     fontSize: 24,
-//     marginVertical: 32,
-//   },
-//   recordButton: {
-//     backgroundColor: '#fff', // Contrast color for the button
-//     borderRadius: 50,
-//     padding: 20,
-//     marginBottom: 32,
-//   },
-//   recordButtonText: {
-//     color: '#4CAF50', // Text color
-//     fontSize: 18,
-//   },
-//   // Add more styles as needed
-// });
 const styles = StyleSheet.create({
-safeArea: {
-    flex: 1,
-    backgroundColor: '#4CAF50', // Primary color
-    },
     container: {
-    flex: 1,
-    backgroundColor: '#7E57C2', // Primary color from the image
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    },
-    closeButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    padding: 10,
+      flex: 1,
+      backgroundColor: '#7E57C2', // Primary color from the image
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 20,
     },
     patientName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 20,
+      fontSize: 32,
+      fontWeight: 'bold',
+      color: '#fff',
+      marginBottom: 20,
+    },
+    closeButton: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      padding: 10,
     },
     timerText: {
-    fontSize: 30,
-    color: '#fff',
-    marginBottom: 40,
-    },
-    recordButton: {
-    backgroundColor: '#fff',
-    borderRadius: 30,
-    padding: 15,
-    paddingHorizontal: 30,
-    marginVertical: 10,
-    },
-    recordButtonText: {
-    color: '#4CAF50',
-    fontSize: 20,
-    },
-    pauseButton: {
-    backgroundColor: 'lightgrey',
-    borderRadius: 30,
-    padding: 15,
-    paddingHorizontal: 30,
-    marginVertical: 10,
-    },
-    pauseButtonText: {
-    color: '#fff',
-    fontSize: 20,
-    },
-    sendButton: {
-    backgroundColor: 'darkgrey',
-    borderRadius: 30,
-    padding: 15,
-    paddingHorizontal: 30,
-    marginVertical: 10,
-    },
-    sendButtonText: {
-    color: '#fff',
-    fontSize: 20,
+      fontSize: 32,
+      color: '#fff',
+      marginBottom: 40,
     },
     waveformPlaceholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    // additional styles if necessary
+      flex: 1,
+      padding : 20,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     waveformText: {
-    color: '#fff',
-    // other styles for the waveform text
+      color: '#fff',
     },
-    // ... other styles you may need
-    });
+    controls: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 20,
+      marginBottom: 10,
+    },
+    recordButton: {
+      backgroundColor: '#fff',
+      borderRadius: 30,
+      padding: 15,
+    },
+    recordButtonText: {
+      color: '#4CAF50',
+      fontSize: 20,
+    },
+    
+    pauseButton: {
+      backgroundColor: 'lightgrey',
+      borderRadius: 30,
+      padding: 15,
+    },
+    pauseButtonText: {
+      color: '#fff',
+      fontSize: 20,
+    },
+    
+    sendButton: {
+      backgroundColor: '#4CAF50', // A color that stands out for the CTA button
+      borderRadius: 25,
+      paddingVertical: 15,
+      paddingHorizontal: 30,
+      alignSelf: 'center',
+      marginVertical: 20,
+    },
+    sendButtonText: {
+      color: '#fff',
+      fontSize: 20,
+      textAlign: 'center',
+    },
+    amplitudeBar: {
+      width: 10,
+      height: 100,
+      backgroundColor: 'white',
+      // Other styling for the bar
+    },
+    row: {
+      flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'center',
+    },
+    bar: {
+      height: 15,
+      width: 10,
+      borderRadius: 2,
+      marginHorizontal: 2,
+    },
+});
 
 
 export default RecordPage;
