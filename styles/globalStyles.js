@@ -43,7 +43,7 @@ export const globalStyles = StyleSheet.create({
     marginBottom: 20,
   },
   subheader: {
-    fontSize: 20,
+    fontSize: 16,
     color: colors.text,
     fontFamily: fonts.primary,
     marginBottom: 10,
@@ -59,7 +59,6 @@ export const globalStyles = StyleSheet.create({
     borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
   },
 //   button: {
     //     // Define a common button style

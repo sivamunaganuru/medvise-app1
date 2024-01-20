@@ -1,89 +1,131 @@
 import React from 'react';
-import { SafeAreaView, View, Text, FlatList, TouchableOpacity, StyleSheet,Image } from 'react-native';
+import { useState, useEffect } from "react";
+import { SafeAreaView, View, Text, FlatList, TouchableOpacity, StyleSheet,Image,Modal, TextInput, Button } from 'react-native';
+import useFetchAppointments from '../hook/useFetchAppointments';
+import { MaterialIcons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
-const appointments = [
-  {
-    id: 1,
-    name: 'John Doe',
-    time: '9:00 AM',
-    imageUrl: 'path/to/image1.jpg',
-  },
-  {
-    id: 2,
-    name: 'Jane Smith',
-    time: '10:00 AM',
-    imageUrl: 'path/to/image2.jpg',
-  },
-  {
-  id: 3,
-  name: 'Jane drev',
-  time: '11:00 AM',
-  imageUrl: 'path/to/image3.jpg',
-  },
-  {
-  id: 4,
-  name: 'lorry drev',
-  time: '11:00 AM',
-  imageUrl: 'path/to/image3.jpg',
-  },
-  {
-    id: 5,
-    name: 'nalla mallesh',
-    time: '11:00 AM',
-    imageUrl: 'path/to/image3.jpg',
-    },
-  {
-    id: 6,
-    name: 'malyala',
-    time: '11:00 AM',
-    imageUrl: 'path/to/image3.jpg',
-    },
 
-  // ... more appointments
-];
+const UserPage = ({ navigation,route }) => {
+  const { user } = route.params;
+  const { appointments,isLoading,error,refetch } = useFetchAppointments({
+    "doctor_id": user.ids.doctor_id,
+  });
+  const [modalVisible, setModalVisible] = useState(false); // State to control the visibility of the modal
+  const [newAppointment, setNewAppointment] = useState({
+    name: '',
+    dateOfBirth: '',
+    time: '',
+    doctorName: '',
+  });
+  const [date, setDate] = useState(new Date());
+  const [mode, setMode] = useState('date');
+  const [show, setShow] = useState(false);
 
-const UserPage = ({ navigation }) => {
+
   const renderAppointment = ({ item }) => {
-    console.log('Rendering appointment, image URL:', item.imageUrl); // Debugging output
-    const imageSource =  require('../assets/patient.png');
-
-
+    const imageSource = require('../assets/patient.png'); // Placeholder image
+  
     return (
       <TouchableOpacity
         style={styles.appointmentItem}
-        onPress={() => navigation.navigate('RecordPage', { patient: appointments[item.id] })}
-        activeOpacity={0.7} 
+        onPress={() => navigation.navigate('RecordPage', { patient: item })}
+        activeOpacity={0.7}
       >
         <Image source={imageSource} style={styles.patientImage} />
         <View style={styles.appointmentInfo}>
-          <Text style={styles.patientName}>{item.name}</Text>
-          <Text style={styles.appointmentTime}>{item.time}</Text>
+          <Text style={styles.patientName}>{item.patientName}</Text>
+          <Text>Age: {item.patientAge}</Text>
+          <Text>Doctor: {item.doctorName}</Text>
         </View>
       </TouchableOpacity>
     );
   };
 
-  return (
 
-    <View style={styles.container}>
-      <Header />
-      <FlatList
-        data={appointments}
-        renderItem={renderAppointment}
-        keyExtractor={(item) => item.id.toString()}
-      />
-    </View>
+  const onChange = (event, selectedDate) => {
+    const currentDate = selectedDate || date;
+    setShow(Platform.OS === 'ios');
+    setDate(currentDate);
+    setNewAppointment({ ...newAppointment, dateOfBirth: currentDate.toISOString().split('T')[0] });
+  };
+
+  const showMode = (currentMode) => {
+    setShow(true);
+    setMode(currentMode);
+  };
+
+  const createAppointment = () => {
+    // Your implementation to create an appointment
+    console.log(newAppointment);
+    setModalVisible(false);
+  };
+
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+        <Text style={styles.headerText}>Patient Appointments</Text>
+        <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.iconContainer}>
+          <MaterialIcons name="account-circle" size={40} color="black" />
+        </TouchableOpacity>
+      </View>
+        {isLoading ? (
+          <Text>Loading...</Text>
+        ) : (
+          <FlatList
+            data={appointments}
+            renderItem={renderAppointment}
+            keyExtractor={(item) => item.id.toString()}
+          />
+        )}
+  
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => {
+            setModalVisible(!modalVisible);
+          }}
+        >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text>Close</Text>
+            </TouchableOpacity>
+            <TextInput
+              style={styles.modalTextInput}
+              placeholder="Patient Name"
+              onChangeText={(text) => setNewAppointment({ ...newAppointment, name: text })}
+              value={newAppointment.name}
+            />
+            <TouchableOpacity
+              style={styles.modalTextInput}
+              onPress={() => showMode('date')}
+            >
+              <Text>{newAppointment.dateOfBirth || 'Select Date of Birth'}</Text>
+            </TouchableOpacity>
+            {show && (
+              <DateTimePicker
+                testID="dateTimePicker"
+                value={date}
+                mode={mode}
+                is24Hour={true}
+                display="default"
+                onChange={onChange}
+              />
+            )}
+            {/* ... Time Picker and Doctor Name Input */}
+            <Button title="Submit" onPress={createAppointment} />
+          </View>
+        </View>
+      </Modal>
+      </View>
+    );
+  };
    
-  );
-};
-
-const Header = () => {
-  return (
-    <View style={styles.header}>
-      <Text style={styles.headerText}>Patient Appointments</Text>
-    </View>
-  );
-};
 
 
 const styles = StyleSheet.create({
@@ -92,15 +134,20 @@ const styles = StyleSheet.create({
   //   backgroundColor: '#4CAF50', // Use the same color as your header for consistency
   // },
   header: {
-    backgroundColor: '#4CAF50', // Replace with your primary color
-    padding: 15,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    backgroundColor: '#4CAF50', // Change to your header's background color
   },
   headerText: {
-    color: '#fff',
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
+  },
+  iconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   container: {
     flex: 1,
@@ -120,8 +167,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   patientImage: {
-    width: 100,
-    height: 100,
+    width: 60,
+    height: 60,
     borderRadius: 25,
     marginRight: 10,
   },
@@ -135,6 +182,70 @@ const styles = StyleSheet.create({
   appointmentTime: {
     fontSize: 16,
   },
+
+  iconContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    padding: 10,
+  },
+  icon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25, // Makes it circular
+    borderWidth: 2,
+    borderColor: '#fff',
+    marginRight: 10, // Spacing between icon and text
+  },
+  createButton: {
+    backgroundColor: '#007bff', // Example button color
+    padding: 10,
+    borderRadius: 5,
+    alignSelf: 'flex-end', // Aligns button to the right
+    marginRight: 10, // Right margin from the screen edge
+    marginTop: 10, // Top margin from the header or previous element
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalTextInput: {
+    height: 40,
+    borderColor: 'gray',
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
+    width: '100%',
+    marginBottom: 20,
+  },
+  closeButton: {
+    alignSelf: 'flex-end',
+    padding: 10,
+    margin: 10,
+    backgroundColor: '#ddd', // Example style
+    borderRadius: 5,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    // ... rest of your modalView styles
+  },
+  
 });
 
 export default UserPage;

@@ -10,7 +10,7 @@ const dotAnimations = Array.from({ length: 10 }).map(
 
 const RecordPage = ({ navigation, route }) => {
   // Extract patient name from route params if passed
-  const patientName = route.params?.patient.name || 'Patient';
+  const patientName = route.params?.patient.patientName || 'Patient';
   const [recording, setRecording] = useState();
   const [recordings, setRecordings] = useState([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -135,7 +135,7 @@ const RecordPage = ({ navigation, route }) => {
 const styles = StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#7E57C2', // Primary color from the image
+      backgroundColor: '#4CAF50', // Primary color from the image
       alignItems: 'center',
       justifyContent: 'center',
       padding: 20,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
       padding: 15,
     },
     recordButtonText: {
-      color: '#4CAF50',
+      color: '#fff',
       fontSize: 20,
     },
     

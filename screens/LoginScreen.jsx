@@ -5,13 +5,15 @@ import * as yup from 'yup';
 import axios from 'axios';
 import { globalStyles } from '../styles/globalStyles';
 import signInWithGoogle from '../Firebase/Auth'
+import { storeSessionInfo, retrieveSessionInfo, clearSessionInfo } from '../Firebase/sessionService';
+// import CookieManager from 'react-native-cookies'
+import RCTNetworking from 'react-native/Libraries/Network/RCTNetworking';
 
 // Validation Schema for the form
 const loginValidationSchema = yup.object().shape({
-  email: yup
+  username: yup
     .string()
-    .email("Please enter a valid email")
-    .required('Email is required'),
+    .required('username is required'),
   password: yup
     .string()
     .min(8, ({ min }) => `Password must be at least ${min} characters`)
@@ -19,23 +21,29 @@ const loginValidationSchema = yup.object().shape({
 });
 
 const LoginScreen = ({ navigation }) => {
+
+
   const handleLogin = async (values, actions) => {
     try {
       console.log(values);
-      // const response = await axios.post('YOUR_API_ENDPOINT/login', values);
+      // CookieManager.clearAll()
+      RCTNetworking.clearCookies(() => { })
+      
+      const response = await axios.post('https://testapi.medvise.ai/api/auth/login/', values);
       // Handle success response
-      // console.log(response.data);
+      storeSessionInfo(response.headers['set-cookie'][0]);
       // Navigate to the next screen or perform further actions
-      navigation.navigate('UserPage');
+      navigation.navigate('UserPage',{user : response.data});
     } catch (error) {
       // Handle error response
-      actions.setFieldError('general', error.response.data.message || 'An error occurred during login.');
+      console.log(error.response.data);
+      actions.setFieldError('general', error.response.data.detail || 'An error occurred during login.');
     }
   };
 
   return (
     <Formik
-      initialValues={{ email: '', password: '' }}
+      initialValues={{ username: '', password: '' }}
       onSubmit={handleLogin}
       validationSchema={loginValidationSchema}
     >
@@ -46,16 +54,15 @@ const LoginScreen = ({ navigation }) => {
            <Text style={globalStyles.header}>Login</Text>
             <TextInput
             style={[globalStyles.input,styles.credentialsInput]}
-              name="email"
-              placeholder="Email"
-              onChangeText={handleChange('email')}
-              onBlur={handleBlur('email')}
-              value={values.email}
-              keyboardType="email-address"
+              name="username"
+              placeholder="Username"
+              onChangeText={handleChange('username')}
+              onBlur={handleBlur('username')}
+              value={values.username}
               autoCapitalize="none"
             />
-            {(errors.email && touched.email) &&
-              <Text style={styles.errorText}>{errors.email}</Text>
+            {(errors.username && touched.username) &&
+              <Text style={styles.errorText}>{errors.username}</Text>
             }
             <TextInput
               name="password"
@@ -111,6 +118,7 @@ const styles = StyleSheet.create({
             fontSize: 14,
             color: 'red',
             padding :2,
+            marginBottom: 10,
         },
         loginButton: {
             width: '100%',
