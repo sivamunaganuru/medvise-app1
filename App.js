@@ -2,6 +2,7 @@ import * as React from 'react';
 import { SafeAreaView,View, Text,StatusBar,StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import LandingPage from './screens/LandingPage';
 import LoginScreen from './screens/LoginScreen';
 import ForgotPassword from './screens/ForgotPassword';
 import UserPage from './screens/UserPage';
@@ -14,7 +15,8 @@ function App() {
   return (
     <SafeAreaView style={styles.safeArea}>
     <NavigationContainer>
-      <Stack.Navigator initialRouteName='Login' screenOptions={{headerShown: false}}>
+      <Stack.Navigator initialRouteName='LandingPage' screenOptions={{headerShown: false}}>
+        <Stack.Screen name="LandingPage" component={LandingPage} />
         <Stack.Screen name="Experiment" component={Experiment} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
